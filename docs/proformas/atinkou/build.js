@@ -10,7 +10,17 @@ const fmtH = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '&nbsp;');
 
 /* ============================ DONNÉES ============================ */
 
-const TVA = 18;
+const TVA = 0;                       // 0 = TVA non applicable
+const SFX = TVA ? ' HT' : '';
+const L = {
+  pu:  'P.U.' + SFX,
+  mt:  'Montant' + SFX,
+  tot: 'TOTAL' + SFX,
+  fin: TVA ? 'TOTAL TTC (FCFA)' : 'TOTAL À PAYER (FCFA)',
+  som: TVA ? ' FCFA TTC.' : ' FCFA.',
+  opt: TVA ? 'Prix HT (FCFA)' : 'Prix (FCFA)',
+  rec: TVA ? 'Montant TTC' : 'Montant',
+};
 
 const A = {
   ref: 'PRO-2026-014/A',
@@ -27,16 +37,13 @@ const A = {
         s: ['Condensateurs électrolytiques, régulateurs de tension, optocoupleurs,',
             'diodes de roue libre, borniers et connecteurs de puissance.'],
         q: 1, pu: 95000 },
-      { d: 'Kit de joints et relais pilote — positionneur ROTORK YTC YT-200',
-        s: ['Kit d’étanchéité complet du bloc pneumatique et relais pilote de rechange.'],
-        q: 1, pu: 95000 },
       { d: 'Condensateurs et composants de commutation — alimentation PULS CP10.481',
         s: ['Condensateurs électrolytiques basse ESR, transistor de commutation,',
             'composants de l’étage primaire 100-240 V AC.'],
         q: 1, pu: 65000 },
-      { d: 'Connectique, joints et pièces de reprise — transmetteurs SITRANS P320',
-        s: ['Réf. 7MF03D0-1VE01-5AF2-Z · joints de raccord process, presse-étoupes,',
-            'bornier de raccordement et composants de la carte électronique.',
+      { d: 'Connectique et pièces de reprise — transmetteurs SITRANS P320',
+        s: ['Réf. 7MF03D0-1VE01-5AF2-Z · presse-étoupes, bornier de raccordement',
+            'et composants de la carte électronique.',
             'Quantité pour trois transmetteurs.'],
         q: 3, pu: 45000 },
     ]},
@@ -65,7 +72,7 @@ const A = {
     ['Délai d’approvisionnement', '7 à 21 jours ouvrés selon la disponibilité des références auprès des fournisseurs.'],
     ['Garantie', 'Garantie constructeur des composants fournis. La garantie de fonctionnement de l’ensemble est couverte par le devis de prestations PRO-2026-014/B.'],
     ['Suite à donner', 'Le règlement du présent proforma déclenche l’approvisionnement. Les travaux de remise en état ne débutent qu’après acceptation du devis PRO-2026-014/B.'],
-    ['Prix', 'Montants exprimés en francs CFA (XOF), hors taxes, TVA 18 % en sus.'],
+    ['Prix', 'Montants exprimés en francs CFA (XOF). TVA non applicable — [préciser le régime : exonération, franchise ou assujettissement du client].'],
   ],
 };
 
@@ -123,7 +130,7 @@ const B = {
     ['Garantie', '3 mois sur les prestations de réparation, à compter de la date de restitution. La garantie ne couvre pas les dommages consécutifs à une surtension, une infiltration d’eau ou une intervention d’un tiers.'],
     ['Pièces non réparables', 'Tout composant jugé irréparable en cours de travaux fait l’objet d’un avenant chiffré soumis à votre accord préalable.'],
     ['Logistique', 'L’enlèvement et la restitution du matériel sont à la charge du client.'],
-    ['Prix', 'Montants exprimés en francs CFA (XOF), hors taxes, TVA 18 % en sus.'],
+    ['Prix', 'Montants exprimés en francs CFA (XOF). TVA non applicable — [préciser le régime : exonération, franchise ou assujettissement du client].'],
   ],
 };
 
@@ -179,8 +186,8 @@ function buildDocx(spec, t) {
     cell('N°', { w: W.num, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.CENTER }),
     cell('Désignation', { w: W.des, fill: NAVY, color: 'FFFFFF', bold: true }),
     cell('Qté', { w: W.qte, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.CENTER }),
-    cell('P.U. HT', { w: W.pu, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.RIGHT }),
-    cell('Montant HT', { w: W.mt, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.RIGHT }),
+    cell(L.pu, { w: W.pu, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.RIGHT }),
+    cell(L.mt, { w: W.mt, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.RIGHT }),
   ]})];
   let n = 0;
   spec.sections.forEach(sec => {
@@ -207,13 +214,13 @@ function buildDocx(spec, t) {
     cell(lab, { w: W.pu, bold: true, align: AlignmentType.RIGHT, fill: o.fill || LIGHT, color: o.color }),
     cell(val, { w: W.mt, bold: true, align: AlignmentType.RIGHT, fill: o.fill || LIGHT, color: o.color, size: o.size }),
   ]});
-  rows.push(totRow('TOTAL HT', fmt(t.ht)));
+  if (TVA || spec.remisePct) rows.push(totRow(L.tot, fmt(t.ht)));
   if (spec.remisePct) {
     rows.push(totRow('Remise commerciale ' + spec.remisePct + ' %', '- ' + fmt(t.remise)));
-    rows.push(totRow('NET HT', fmt(t.net)));
+    if (TVA) rows.push(totRow('NET HT', fmt(t.net)));
   }
-  rows.push(totRow('TVA ' + TVA + ' %', fmt(t.tva)));
-  rows.push(totRow('TOTAL TTC (FCFA)', fmt(t.ttc), { fill: NAVY, color: 'FFFFFF', size: 22 }));
+  if (TVA) rows.push(totRow('TVA ' + TVA + ' %', fmt(t.tva)));
+  rows.push(totRow(L.fin, fmt(t.ttc), { fill: NAVY, color: 'FFFFFF', size: 22 }));
 
   const OW = { d: 6500, v: 3400 };
   const optTable = new Table({
@@ -221,7 +228,7 @@ function buildDocx(spec, t) {
     rows: [
       new TableRow({ tableHeader: true, children: [
         cell('Option (non incluse dans le total ci-dessus)', { w: OW.d, fill: NAVY, color: 'FFFFFF', bold: true }),
-        cell('Prix HT (FCFA)', { w: OW.v, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.RIGHT }),
+        cell(L.opt, { w: OW.v, fill: NAVY, color: 'FFFFFF', bold: true, align: AlignmentType.RIGHT }),
       ]}),
       ...spec.options.map(([d, v]) => new TableRow({ children: [
         cell(d, { w: OW.d }), cell(fmt(v), { w: OW.v, align: AlignmentType.RIGHT, bold: true }),
@@ -234,7 +241,7 @@ function buildDocx(spec, t) {
     rows: [
       new TableRow({ tableHeader: true, children: [
         cell('Rappel du programme en deux phases', { w: 7100, fill: GREY, color: NAVY, bold: true }),
-        cell('Montant TTC', { w: 2800, fill: GREY, color: NAVY, bold: true, align: AlignmentType.RIGHT }),
+        cell(L.rec, { w: 2800, fill: GREY, color: NAVY, bold: true, align: AlignmentType.RIGHT }),
       ]}),
       ...recapLignes.map(([d, v]) => new TableRow({ children: [
         cell(d, { w: 7100, bold: d.indexOf(spec.ref) >= 0 }),
@@ -293,7 +300,7 @@ function buildDocx(spec, t) {
         new Table({ columnWidths: [W.num, W.des, W.qte, W.pu, W.mt],
           width: { size: TW, type: WidthType.DXA }, rows }),
         new Paragraph({ spacing: { after: 120 }, children: [] }),
-        p('Arrêté le présent devis proforma à la somme de : ' + fmt(t.ttc) + ' FCFA TTC.',
+        p('Arrêté le présent devis proforma à la somme de : ' + fmt(t.ttc) + L.som,
           { bold: true, size: 20, color: ACCENT, after: 200 }),
         recapTable,
         new Paragraph({ children: [new PageBreak()] }),
@@ -340,13 +347,15 @@ function buildHtml(spec, t) {
               `<td class="c">${l.q}</td><td class="r">${fmtH(l.pu)}</td><td class="r b">${fmtH(l.q*l.pu)}</td></tr>`;
     });
   });
-  let tot = `<tr class="tot"><td style="width:66%;border:none"></td><td class="lbl" style="width:16%">TOTAL HT</td><td class="val" style="width:18%">${fmtH(t.ht)}</td></tr>`;
+  let tot = (TVA || spec.remisePct)
+    ? `<tr class="tot"><td style="width:66%;border:none"></td><td class="lbl" style="width:16%">${L.tot}</td><td class="val" style="width:18%">${fmtH(t.ht)}</td></tr>`
+    : '';
   if (spec.remisePct) {
     tot += `<tr class="tot"><td style="border:none"></td><td class="lbl">Remise commerciale ${spec.remisePct} %</td><td class="val">-&nbsp;${fmtH(t.remise)}</td></tr>`;
-    tot += `<tr class="tot"><td style="border:none"></td><td class="lbl">NET HT</td><td class="val">${fmtH(t.net)}</td></tr>`;
+    if (TVA) tot += `<tr class="tot"><td style="border:none"></td><td class="lbl">NET HT</td><td class="val">${fmtH(t.net)}</td></tr>`;
   }
-  tot += `<tr class="tot"><td style="border:none"></td><td class="lbl">TVA ${TVA} %</td><td class="val">${fmtH(t.tva)}</td></tr>`;
-  tot += `<tr class="tot grand"><td style="border:none"></td><td class="lbl">TOTAL TTC (FCFA)</td><td class="val">${fmtH(t.ttc)}</td></tr>`;
+  if (TVA) tot += `<tr class="tot"><td style="border:none"></td><td class="lbl">TVA ${TVA} %</td><td class="val">${fmtH(t.tva)}</td></tr>`;
+  tot += `<tr class="tot grand"><td style="width:66%;border:none"></td><td class="lbl">${L.fin}</td><td class="val">${fmtH(t.ttc)}</td></tr>`;
 
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Proforma ${spec.ref} ATINKOU</title><style>
 @page { size: A4; margin: 14mm 13mm; }
@@ -411,19 +420,19 @@ table.opt td { border-bottom: 1px solid #D9D9D9; padding: 5px; font-size: 9pt; }
 <div class="intro">${spec.intro}</div>
 <table class="det">
 <thead><tr><th style="width:6%" class="c">N°</th><th style="width:53%">Désignation</th>
-<th style="width:7%" class="c">Qté</th><th style="width:16%" class="r">P.U. HT</th><th style="width:18%" class="r">Montant HT</th></tr></thead>
+<th style="width:7%" class="c">Qté</th><th style="width:16%" class="r">${L.pu}</th><th style="width:18%" class="r">${L.mt}</th></tr></thead>
 <tbody>${body}</tbody></table>
 <table style="margin-top:8px">${tot}</table>
-<div class="arrete">Arrêté le présent devis proforma à la somme de : ${fmtH(t.ttc)} FCFA TTC.</div>
+<div class="arrete">Arrêté le présent devis proforma à la somme de : ${fmtH(t.ttc)}${L.som}</div>
 <table class="rec">
-<thead><tr><th style="width:74%">Rappel du programme en deux phases</th><th style="width:26%" class="r">Montant TTC</th></tr></thead>
+<thead><tr><th style="width:74%">Rappel du programme en deux phases</th><th style="width:26%" class="r">${L.rec}</th></tr></thead>
 <tbody>${recapLignes.map(([d,v]) => `<tr><td${d.indexOf(spec.ref)>=0?' class="b"':''}>${d}</td><td class="r b">${fmtH(v)}</td></tr>`).join('')}
 <tr class="g"><td>TOTAL DU PROGRAMME</td><td class="r">${fmtH(PROG.ttc)}</td></tr></tbody></table>
 <div class="pb"></div>
 <h2>${spec.optTitre}</h2>
 <div class="intro" style="font-style:italic">${spec.optIntro}</div>
 <table class="opt">
-<thead><tr><th style="width:72%">Option (non incluse dans le total ci-dessus)</th><th style="width:28%" class="r">Prix HT (FCFA)</th></tr></thead>
+<thead><tr><th style="width:72%">Option (non incluse dans le total ci-dessus)</th><th style="width:28%" class="r">${L.opt}</th></tr></thead>
 <tbody>${spec.options.map(([d,v]) => `<tr><td>${d}</td><td class="r b">${fmtH(v)}</td></tr>`).join('')}</tbody></table>
 <h2 style="margin-top:22px">CONDITIONS COMMERCIALES ET TECHNIQUES</h2>
 <div class="cond">${spec.conditions.map(([k,v]) => `<p><b>${k} :</b> ${v}</p>`).join('')}</div>
