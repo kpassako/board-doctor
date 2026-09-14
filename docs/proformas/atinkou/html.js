@@ -6,15 +6,12 @@ const sections = [
     { d: 'Actionneur électrique AOX-M-060 — carte de commande réf. C1171-M1',
       s: 'Code câblage M-280-10 · 400 V AC · 400-540 Nm · 67 tr/min · IP67<br>Diagnostic sur banc, remplacement des relais de puissance et du bloc contacteur, contrôle des alimentations 24 V / 5 V, reprise des soudures, tropicalisation, essais de manœuvre ouverture/fermeture en charge.',
       q: 1, pu: 485000 },
-    { d: 'Actionneur électrique ROTORK (commande locale + volant de secours)',
-      s: 'Diagnostic complet, remise en état de la carte de commande et des contacteurs, contrôle du moteur et des isolements, réglage des fins de course et du limiteur de couple, essais de manœuvre et vérification de la recopie de position.',
-      q: 1, pu: 750000 },
     { d: 'Transmetteur de pression SIEMENS SITRANS P320',
-      s: 'Réf. 7MF03D0-1VE01-5AF2-Z · 4-20 mA HART · 10,5-45 V DC · IP66<br>Diagnostic électronique, remise en état, contrôle d’étanchéité de la cellule, réétalonnage 5 points avec certificat de vérification raccordé étalon.',
-      q: 1, pu: 395000 },
+      s: 'Réf. 7MF03D0-1VE01-5AF2-Z · 4-20 mA HART · 10,5-45 V DC · IP66<br>Diagnostic électronique, remise en état, contrôle d’étanchéité de la cellule, réétalonnage 5 points avec certificat de vérification raccordé étalon.<br>Prestation applicable à chacun des trois transmetteurs confiés.',
+      q: 3, pu: 395000 },
     { d: 'Positionneur de vanne ROTORK YTC YT-200',
       s: 'Révision complète : nettoyage du bloc pneumatique, remplacement du kit joints et du relais pilote, réglage de la course, calibration du signal 4-20 mA, essais de réponse et de linéarité sur banc.',
-      q: 1, pu: 320000 },
+      q: 1, pu: 275000 },
     { d: 'Alimentation PULS DIMENSION CP10.481 (repère -FA1)',
       s: '48 V DC / 5,4 A · entrée 100-240 V AC · contact DC-ok 13/14<br>Réparation des étages primaire et secondaire, remplacement des condensateurs électrolytiques et du circuit de commutation, essais en charge sur 8 heures.',
       q: 1, pu: 185000 },
@@ -26,8 +23,7 @@ const sections = [
       s: 'Soudure, tresse à dessouder, vernis de tropicalisation, produits de nettoyage, gaines thermorétractables et visserie.', q: 1, pu: 45000 },
   ]},
   { titre: 'C — ESSAIS, LOGISTIQUE ET DOCUMENTATION', lignes: [
-    { d: 'Essais de validation sur banc et rapport de test', s: 'Par équipement, avant restitution.', q: 5, pu: 35000 },
-    { d: 'Enlèvement et restitution du matériel', s: 'Rotation atelier ↔ site Atinkou, transport et manutention inclus.', q: 2, pu: 90000 },
+    { d: 'Essais de validation sur banc et rapport de test', s: 'Par équipement, avant restitution.', q: 6, pu: 35000 },
     { d: 'Dossier technique de fin d’intervention', s: 'Rapport de diagnostic, relevés de mesures, certificats d’étalonnage (PDF + papier).', q: 1, pu: 60000 },
   ]},
 ];
@@ -47,7 +43,7 @@ sections.forEach(sec => {
 
 const options = [
   ['Fourniture d’une carte de commande AOX neuve réf. C1171-M1 (si réparation non concluante)', 1150000],
-  ['Fourniture d’un transmetteur SIEMENS SITRANS P320 neuf, réf. 7MF03D0-1VE01-5AF2-Z', 2350000],
+  ['Fourniture d’un transmetteur SIEMENS SITRANS P320 neuf, réf. 7MF03D0-1VE01-5AF2-Z (prix unitaire)', 2350000],
   ['Fourniture d’une alimentation PULS DIMENSION CP10.481 neuve', 395000],
   ['Contrat de maintenance préventive annuelle (2 visites sur site, instrumentation et actionneurs)', 1800000],
 ];
@@ -57,9 +53,10 @@ const conditions = [
   ['Délai d’exécution', '15 jours ouvrés à compter de la réception du bon de commande et du matériel complet. Délai porté à 6 semaines si une fourniture neuve à l’import est retenue.'],
   ['Modalités de paiement', '50 % à la commande, solde à la restitution du matériel, par virement bancaire. Coordonnées bancaires : [Banque — IBAN / N° de compte].'],
   ['Garantie', '3 mois sur les prestations de réparation et les pièces remplacées, à compter de la date de restitution. La garantie ne couvre pas les dommages consécutifs à une surtension, une infiltration d’eau ou une intervention d’un tiers.'],
-  ['Diagnostic', 'Le forfait diagnostic est intégré au prix de réparation. En cas de refus du devis après démontage, seuls les frais de diagnostic et de transport restent dus.'],
+  ['Diagnostic', 'Le forfait diagnostic est intégré au prix de réparation. En cas de refus du devis après démontage, seuls les frais de diagnostic restent dus.'],
   ['Pièces non réparables', 'Tout composant jugé irréparable fait l’objet d’un avenant chiffré soumis à votre accord préalable.'],
-  ['Prix', 'Montants exprimés en francs CFA (XOF), hors taxes, TVA 18 % en sus. Transport et manutention inclus pour deux rotations Abidjan ↔ site.'],
+  ['Logistique', 'L\u2019enlèvement et la restitution du matériel sont à la charge du client. Le matériel doit nous être remis complet, en atelier, accompagné du présent bon de commande.'],
+  ['Prix', 'Montants exprimés en francs CFA (XOF), hors taxes, TVA 18 % en sus.'],
 ];
 
 const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Proforma ATINKOU</title><style>
@@ -126,7 +123,7 @@ table.opt td { border-bottom: 1px solid #D9D9D9; padding: 5px; font-size: 9pt; }
 <div class="meta">N° PRO-2026-014 &nbsp;·&nbsp; Abidjan, le 14 septembre 2026 &nbsp;·&nbsp; Validité : 30 jours</div>
 
 <div class="objet">OBJET : Dépannage et remise en état d’équipements d’instrumentation et de robinetterie motorisée</div>
-<div class="intro">Suite à votre demande et à l’examen du matériel qui nous a été confié, nous avons l’honneur de vous soumettre notre proposition chiffrée pour le diagnostic, la réparation et la remise en service des cinq équipements listés ci-dessous. Les prestations comprennent les essais de validation en atelier et la remise d’un dossier technique.</div>
+<div class="intro">Suite à votre demande et à l’examen du matériel qui nous a été confié, nous avons l’honneur de vous soumettre notre proposition chiffrée pour le diagnostic, la réparation et la remise en service des équipements listés ci-dessous (six unités). Les prestations comprennent les essais de validation en atelier et la remise d’un dossier technique.</div>
 
 <table class="det">
 <thead><tr><th style="width:6%" class="c">N°</th><th style="width:53%">Désignation des prestations</th>
