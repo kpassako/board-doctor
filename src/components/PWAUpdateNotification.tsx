@@ -37,7 +37,7 @@ export default function PWAUpdateNotification() {
   return (
     <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-blue-600 text-white rounded-lg shadow-2xl p-4 z-50 animate-slide-down">
       <div className="flex items-start space-x-3">
-        <RefreshCw className="w-6 h-6 flex-shrink-0 mt-0.5" />
+        <RefreshCw className="w-6 h-6 flex-shrink-0 mt-0.5 animate-spin [animation-duration:3s]" />
         
         <div className="flex-1">
           <h3 className="font-semibold mb-1">
@@ -50,7 +50,8 @@ export default function PWAUpdateNotification() {
           <div className="flex space-x-2">
             <button
               onClick={handleUpdate}
-              className="flex-1 bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
+              className="flex-1 bg-white text-blue-600 px-4 py-2 rounded-lg press text-sm font-medium
+                transition-all duration-300 hover:bg-blue-50 hover:shadow-lg"
             >
               Mettre à jour
             </button>

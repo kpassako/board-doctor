@@ -10,6 +10,8 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Change à chaque nouvelle erreur pour rejouer l'animation de secousse
+  const [errorKey, setErrorKey] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
@@ -32,6 +34,7 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
+      setErrorKey((key) => key + 1);
       return;
     }
 
@@ -95,8 +98,11 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
 
       {!preview ? (
         <div
-          className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-            ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+            transition-all duration-300 ease-out press
+            ${dragActive
+              ? 'border-blue-500 bg-blue-50 scale-[1.02] shadow-lg shadow-blue-500/10'
+              : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/40'}
             ${error ? 'border-red-500 bg-red-50' : ''}`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -104,7 +110,11 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
           onDrop={handleDrop}
           onClick={handleClick}
         >
-          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+          <Upload
+            className={`mx-auto h-12 w-12 transition-colors duration-300 ${
+              dragActive ? 'text-blue-500 animate-bounce' : 'text-gray-400 animate-float'
+            }`}
+          />
           <p className="mt-2 text-sm text-gray-600">
             <span className="font-semibold text-blue-600">Cliquez pour uploader</span> ou glissez-déposez
           </p>
@@ -113,14 +123,17 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
           </p>
           
           {error && (
-            <div className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-md">
+            <div
+              key={errorKey}
+              className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-md animate-shake"
+            >
               {error}
             </div>
           )}
         </div>
       ) : (
-        <div className="relative">
-          <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+        <div className="relative animate-scale-in">
+          <div className="border-2 border-gray-200 rounded-lg overflow-hidden transition-shadow duration-300 hover:shadow-lg">
             <img
               src={preview}
               alt="Preview"
@@ -129,7 +142,8 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
           </div>
           <button
             onClick={handleRemove}
-            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 press
+              transition-all duration-300 hover:bg-red-600 hover:rotate-90 hover:scale-110"
             title="Supprimer l'image"
           >
             <X className="w-4 h-4" />

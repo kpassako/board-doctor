@@ -29,10 +29,10 @@ export default function DiagnosticReport({ result }: DiagnosticReportProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6 card-hover animate-fade-in-up">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900">Rapport de diagnostic</h2>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+        <span className={`px-3 py-1 rounded-full text-sm font-medium animate-pop-in ${
           result.overallStatus === 'critical' ? 'bg-red-100 text-red-700' :
           result.overallStatus === 'warning' ? 'bg-orange-100 text-orange-700' :
           'bg-green-100 text-green-700'
@@ -50,10 +50,14 @@ export default function DiagnosticReport({ result }: DiagnosticReportProps) {
       {result.defects.map((defect, index) => (
             <div
               key={index}
-              className={`border rounded-lg p-4 ${getSeverityColor(defect.severity)}`}
+              style={{ animationDelay: `${120 + index * 110}ms` }}
+              className={`border rounded-lg p-4 animate-fade-in-up transition-all duration-300
+                hover:-translate-y-0.5 hover:shadow-md ${getSeverityColor(defect.severity)}`}
             >
               <div className="flex items-start space-x-3">
-                {getSeverityIcon(defect.severity)}
+                <span className="mt-0.5 animate-pop-in" style={{ animationDelay: `${220 + index * 110}ms` }}>
+                  {getSeverityIcon(defect.severity)}
+                </span>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">{defect.type}</h4>
                   <p className="text-sm text-gray-600 mt-1">{defect.description}</p>
@@ -68,8 +72,8 @@ export default function DiagnosticReport({ result }: DiagnosticReportProps) {
           ))}
 
           {result.defects.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-500" />
+            <div className="text-center py-8 text-gray-500 animate-fade-in">
+              <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-500 animate-pop-in" />
               <p>Aucun défaut détecté</p>
             </div>
           )}
@@ -84,7 +88,11 @@ export default function DiagnosticReport({ result }: DiagnosticReportProps) {
           </h3>
           <ul className="space-y-2">
             {result.recommendations.map((rec, index) => (
-              <li key={index} className="flex items-start space-x-2">
+              <li
+                key={index}
+                style={{ animationDelay: `${300 + index * 90}ms` }}
+                className="flex items-start space-x-2 animate-fade-in-up"
+              >
                 <span className="text-blue-600 font-bold">•</span>
                 <span className="text-gray-700">{rec}</span>
               </li>
