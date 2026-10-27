@@ -1,114 +1,146 @@
-export interface ComponentDefect {
-  type: string;
-  severity: 'critical' | 'warning' | 'info';
-  description: string;
-  location?: string;
-  confidence: number;
+import type {
+  DiagnoseErrorBody,
+  DiagnoseRequest,
+  DiagnoseResponse,
+  Diagnosis,
+  Measurement,
+} from '../../shared/diagnosis';
+import type { PreparedImage } from '../lib/image';
+
+export type { Diagnosis, Measurement };
+
+export interface DiagnosisInput {
+  device: string;
+  symptom: string;
+  supplyCurrent: string;
+  measurements: Measurement[];
+  notes: string;
 }
 
-export interface DiagnosticResult {
+export interface DiagnosisRecord {
   id: string;
-  timestamp: Date;
-  imageName: string;
-  imageData: string;
-  defects: ComponentDefect[];
-  recommendations: string[];
-  overallStatus: 'critical' | 'warning' | 'good';
+  createdAt: string;
+  input: DiagnosisInput;
+  imageName: string | null;
+  thumbnail: string | null;
+  diagnosis: Diagnosis;
+  model: string;
 }
 
-export async function analyzeBoardImage(
-  imageDataUrl: string,
-  imageName: string
-): Promise<DiagnosticResult> {
-  await new Promise(resolve => setTimeout(resolve, 2000));
+export class DiagnosisError extends Error {
+  constructor(
+    message: string,
+    readonly code: DiagnoseErrorBody['code'] | 'network',
+  ) {
+    super(message);
+  }
+}
 
-  const mockDefects: ComponentDefect[] = [
-    {
-      type: 'Condensateur bombé',
-      severity: 'critical',
-      description: 'Condensateur électrolytique présentant un bombement visible',
-      location: 'C12 (près du régulateur de tension)',
-      confidence: 0.92
-    },
-    {
-      type: 'Trace de brûlure',
-      severity: 'warning',
-      description: 'Décoloration suspecte sur le circrimé',
-      location: 'Zone U3',
-      confidence: 0.78
-    }
-  ];
+const HISTORY_KEY = 'board-doctor:diagnostics';
+const ACCESS_CODE_KEY = 'board-doctor:access-code';
+const HISTORY_LIMIT = 50;
 
-  const recommendations = [
-    'Remplacer le condensateur C12 par un modèle équivalent (1000µF 16V)',
-    'Inspecter visuellement la zone U3 pour détecter d\'éventuels courts-circuits',
-    'Tester la tension de sortie du régulateur après réparation',
-    'Vérifier l\'état des composants adjacents'
-  ];
+// Netlify coupe la fonction à 30 s : on abandonne côté client un peu après.
+const REQUEST_TIMEOUT_MS = 35_000;
 
-  const result: DiagnosticResult = {
-    id: `diag-${Date.now()}`,
-    timestamp: new Date(),
-    imageName,
-    imageData: imageDataUrl,
-    defects: mockDefects,
-    recommendations,
-    overallStatus: mockDefects.some(d => d.severity === 'critical') ? 'critical' : 'warning'
+export function getAccessCode(): string {
+  try {
+    return localStorage.getItem(ACCESS_CODE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function setAccessCode(code: string): void {
+  try {
+    localStorage.setItem(ACCESS_CODE_KEY, code.trim());
+  } catch {
+    // Stockage indisponible (navigation privée) : le code sera redemandé.
+  }
+}
+
+export async function requestDiagnosis(
+  input: DiagnosisInput,
+  image: (PreparedImage & { name: string }) | null,
+): Promise<DiagnosisRecord> {
+  const body: DiagnoseRequest = {
+    ...input,
+    image: image ? { mediaType: image.mediaType, data: image.data } : null,
   };
 
-  saveDiagnostic(result);
-  return result;
-}
-
-export function saveDiagnostic(result: DiagnosticResult): void {
-  const history = getDiagnosticHistory();
-  history.unshift(result);
-  const limited = history.slice(0, 50);
-  localStorage.setItem('diagnostic-history', JSON.stringify(limited));
-}
-
-export function getDiagnosticHistory(): DiagnosticResult[] {
-  const data = localStorage.getItem('diagnostic-history');
-  if (!data) return [];
-  
+  let response: Response;
   try {
-    const parsed = JSON.parse(data);
-    return parsed.map((item: any) => ({
-      ...item,
-      timestamp: new Date(item.timestamp)
-    }));
+    response = await fetch('/api/diagnose', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-access-code': getAccessCode() },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    const timedOut = error instanceof DOMException && error.name === 'TimeoutError';
+    throw new DiagnosisError(
+      timedOut
+        ? "L'analyse a pris trop de temps. Réessayez."
+        : 'Pas de connexion au serveur. Vérifiez votre accès internet.',
+      timedOut ? 'timeout' : 'network',
+    );
+  }
+
+  const payload = (await response.json().catch(() => null)) as DiagnoseResponse | DiagnoseErrorBody | null;
+  if (!response.ok || !payload || !('diagnosis' in payload)) {
+    const error = payload && 'error' in payload ? payload : null;
+    throw new DiagnosisError(
+      error?.error ?? `Le serveur a répondu avec une erreur (${response.status}).`,
+      error?.code ?? 'upstream',
+    );
+  }
+
+  const record: DiagnosisRecord = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    input,
+    imageName: image?.name ?? null,
+    thumbnail: image?.thumbnail ?? null,
+    diagnosis: payload.diagnosis,
+    model: payload.model,
+  };
+  saveDiagnosis(record);
+  return record;
+}
+
+export function getDiagnosisHistory(): DiagnosisRecord[] {
+  try {
+    const data = localStorage.getItem(HISTORY_KEY);
+    return data ? (JSON.parse(data) as DiagnosisRecord[]) : [];
   } catch {
     return [];
   }
 }
 
-export function getDiagnosticById(id: string): DiagnosticResult | undefined {
-  const history = getDiagnosticHistory();
-  return history.find(d => d.id === id);
+function writeHistory(history: DiagnosisRecord[]): void {
+  // Quota du navigateur atteint : on retire les plus anciens jusqu'à ce que l'écriture passe.
+  for (let kept = history.length; kept >= 0; kept--) {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, kept)));
+      return;
+    } catch {
+      // On réessaie avec un diagnostic de moins.
+    }
+  }
 }
 
-export function deleteDiagnostic(id: string): void {
-  const history = getDiagnosticHistory();
-  const filtered = history.filter(d => d.id !== id);
-  localStorage.setItem('diagnostic-history', JSON.stringify(filtered));
+function saveDiagnosis(record: DiagnosisRecord): void {
+  writeHistory([record, ...getDiagnosisHistory()].slice(0, HISTORY_LIMIT));
 }
 
-export function clearHistory(): void {
-  localStorage.removeItem('diagnostic-history');
+export function deleteDiagnosis(id: string): void {
+  writeHistory(getDiagnosisHistory().filter((d) => d.id !== id));
 }
 
-export async function advancedAnalysis(_imageDataUrl: string): Promise<ComponentDefect[]> {
-  return [];
+export function clearDiagnosisHistory(): void {
+  try {
+    localStorage.removeItem(HISTORY_KEY);
+  } catch {
+    // Rien à effacer si le stockage est indisponible.
+  }
 }
-
-const diagnosticService = {
-  analyzeBoardImage,
-  saveDiagnostic,
-  getDiagnosticHistory,
-  getDiagnosticById,
-  deleteDiagnostic,
-  clearHistory,
-  advancedAnalysis
-};
-
-export default diagnosticService;

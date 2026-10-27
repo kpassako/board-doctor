@@ -3,10 +3,11 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 
 interface ImageUploaderProps {
   onImageSelect: (file: File, preview: string) => void;
+  onClear?: () => void;
   maxSizeMB?: number;
 }
 
-export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUploaderProps) {
+export default function ImageUploader({ onImageSelect, onClear, maxSizeMB = 10 }: ImageUploaderProps) {
   const [dragActive, setDragActive] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +82,7 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
     if (inputRef.current) {
       inputRef.current.value = '';
     }
+    onClear?.();
   };
 
   return (
@@ -128,6 +130,7 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 10 }: ImageUp
             />
           </div>
           <button
+            type="button"
             onClick={handleRemove}
             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
             title="Supprimer l'image"
