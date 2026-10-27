@@ -10,30 +10,26 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import PdfExportButtons from './PdfExportButtons';
+import { KIND_LABELS, LEVEL_LABELS, PHOTO_QUALITY_LABELS, STATUS_LABELS } from '../lib/diagnosisLabels';
 import type { Diagnosis, DiagnosisRecord } from '../services/diagnosticService';
 
 interface DiagnosticReportProps {
   record: DiagnosisRecord;
 }
 
-const STATUS: Record<Diagnosis['overallStatus'], { label: string; className: string }> = {
-  critical: { label: 'Critique', className: 'bg-red-100 text-red-700' },
-  warning: { label: 'Attention', className: 'bg-orange-100 text-orange-700' },
-  good: { label: 'Bon état apparent', className: 'bg-green-100 text-green-700' },
-  inconclusive: { label: 'Non concluant', className: 'bg-gray-100 text-gray-700' },
+const STATUS_CLASSES: Record<Diagnosis['overallStatus'], string> = {
+  critical: 'bg-red-100 text-red-700',
+  warning: 'bg-orange-100 text-orange-700',
+  good: 'bg-green-100 text-green-700',
+  inconclusive: 'bg-gray-100 text-gray-700',
 };
-
-const LEVEL_LABELS = { high: 'élevée', medium: 'moyenne', low: 'faible' } as const;
 
 const LEVEL_CLASSES = {
   high: 'bg-red-100 text-red-700',
   medium: 'bg-orange-100 text-orange-700',
   low: 'bg-gray-100 text-gray-600',
 } as const;
-
-const PHOTO_QUALITY = { good: 'bonne', fair: 'moyenne', poor: 'insuffisante', none: '' } as const;
-
-const KIND_LABELS = { tension: 'Tension', diode: 'Diode', resistance: 'Résistance', courant: 'Courant' } as const;
 
 function severityStyle(severity: Diagnosis['findings'][number]['severity']) {
   switch (severity) {
@@ -60,7 +56,6 @@ function Section({ icon, title, children }: { icon: ReactNode; title: string; ch
 
 export default function DiagnosticReport({ record }: DiagnosticReportProps) {
   const { diagnosis, input } = record;
-  const status = STATUS[diagnosis.overallStatus];
   const showPhotoAdvice =
     (diagnosis.photoQuality === 'fair' || diagnosis.photoQuality === 'poor') && diagnosis.photoAdvice;
 
@@ -71,10 +66,14 @@ export default function DiagnosticReport({ record }: DiagnosticReportProps) {
           <h2 className="text-xl font-semibold text-gray-900">Rapport de diagnostic</h2>
           {input.device && <p className="text-sm text-gray-500 mt-0.5 break-words">{input.device}</p>}
         </div>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${status.className}`}>
-          {status.label}
+        <span
+          className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${STATUS_CLASSES[diagnosis.overallStatus]}`}
+        >
+          {STATUS_LABELS[diagnosis.overallStatus]}
         </span>
       </header>
+
+      <PdfExportButtons record={record} />
 
       <div className="flex gap-4">
         {record.thumbnail && (
@@ -89,7 +88,7 @@ export default function DiagnosticReport({ record }: DiagnosticReportProps) {
 
       {showPhotoAdvice && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          <strong>Photo de qualité {PHOTO_QUALITY[diagnosis.photoQuality]} :</strong> {diagnosis.photoAdvice}
+          <strong>Photo de qualité {PHOTO_QUALITY_LABELS[diagnosis.photoQuality]} :</strong> {diagnosis.photoAdvice}
         </div>
       )}
 
